@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>다층모형 Shrinkage Explorer — Eight Schools</title>
+<style>
+  body {
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR",
+                 sans-serif;
+    max-width: 1100px; margin: 1.5em auto; padding: 0 1em;
+    color: #222; background: #fafafa;
+  }
+  h1   { color: #003a70; margin-bottom: 0.2em; }
+  h2   { color: #003a70; border-bottom: 1px solid #ccd; padding-bottom: 0.1em; }
+  .sub { color: #555; font-size: 0.92em; margin-top: 0; }
+  .box {
+    background: #fff; border: 1px solid #ccd; border-radius: 8px;
+    padding: 1em 1.2em; margin: 1em 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .key {
+    background: #eef6ff; border-left: 4px solid #2a6fbb;
+    padding: 0.7em 1em; margin: 1em 0; border-radius: 4px;
+  }
+  .warn {
+    background: #fff3f3; border-left: 4px solid #c44;
+    padding: 0.7em 1em; margin: 1em 0; border-radius: 4px;
+  }
+  .controls {
+    display: flex; gap: 2em; flex-wrap: wrap;
+    align-items: center; padding: 0.8em 1em;
+    background: #f0f4fa; border-radius: 6px;
+  }
+  .controls label { font-weight: bold; }
+  .controls input[type=range] { width: 220px; }
+  .num { display: inline-block; min-width: 4em; text-align: right; color: #003a70; }
+  canvas { background: white; border: 1px solid #ddd; border-radius: 4px; }
+  table { border-collapse: collapse; margin: 0.5em 0; font-size: 0.92em; }
+  th, td { padding: 4px 10px; border-bottom: 1px solid #ddd; text-align: right; }
+  th { background: #f0f4fa; }
+  td.label, th.label { text-align: left; }
+  code { background: #f3f3f3; padding: 1px 5px; border-radius: 3px; }
+  .formula { font-family: serif; font-style: italic; }
+  .legend { font-size: 0.85em; color: #555; }
+  .row { display: flex; gap: 1em; align-items: flex-start; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 320px; }
+</style>
+</head>
+<body>
+
+<h1>다층모형 Shrinkage Explorer</h1>
+<p class="sub">
+  Gelman, Hill, & Yajima (2012) · Eight Schools (Rubin 1981) ·
+  슬라이더로 <span class="formula">τ</span> (그룹 간 SD)를 직접 바꿔보세요
+</p>
+
+<div class="key">
+  <strong>이 페이지의 학습 목표</strong>: 그룹 간 변동 <span class="formula">τ</span>가 작으면
+  partial pooling이 강해지고 (모든 사이트 추정치가 평균 부근으로 끌려가고),
+  <span class="formula">τ</span>가 크면 약해진다는 것을 <em>눈으로</em> 확인한다.
+  Bonferroni처럼 신뢰구간을 그저 넓히는 것과 어떻게 다른지 비교해보자.
+</div>
+
+<div class="box">
+  <h2>모형</h2>
+  <p>각 학교 <em>j</em> = 1, …, 8 에 대해 추정치 <span class="formula">y<sub>j</sub></span> 와 표준오차 <span class="formula">σ<sub>j</sub></span>가 주어졌다고 하자.</p>
+  <p style="font-size:1.1em; text-align:center;">
+    <span class="formula">y<sub>j</sub></span> ~ <span class="formula">N(θ<sub>j</sub>, σ<sub>j</sub><sup>2</sup>)</span>,
+    &nbsp;&nbsp;
+    <span class="formula">θ<sub>j</sub></span> ~ <span class="formula">N(μ, τ<sup>2</sup>)</span>
+  </p>
+  <p>μ를 고정한 채 (관측 평균 사용), τ를 슬라이더로 조절하면서 사후 평균과 사후 표준편차를 실시간으로 본다:</p>
+  <p style="text-align:center; font-size:1.05em">
+    <span class="formula">E[θ<sub>j</sub> | y<sub>j</sub>]</span> =
+      <span class="formula">w<sub>j</sub> y<sub>j</sub></span> +
+      (1 − <span class="formula">w<sub>j</sub></span>) <span class="formula">μ</span>,
+    &nbsp;
+    <span class="formula">w<sub>j</sub></span> =
+    <span class="formula">τ<sup>2</sup> / (τ<sup>2</sup> + σ<sub>j</sub><sup>2</sup>)</span>
+  </p>
+</div>
+
+<div class="controls">
+  <label for="tau">τ (학교 간 SD):</label>
+  <input type="range" id="tau" min="0" max="40" step="0.1" value="5">
+  <span class="num" id="tauVal">5.0</span>
+
+  <label for="alpha">신뢰수준 (Bonferroni 비교용):</label>
+  <select id="alpha">
+    <option value="1.96" selected>95% (z=1.96)</option>
+    <option value="2.5758">99% (z=2.58)</option>
+  </select>
+</div>
+
+<div class="row">
+  <div class="col">
+    <h2>사후 추정치</h2>
+    <canvas id="cv" width="540" height="380"></canvas>
+    <p class="legend">
+      <span style="color:#1976d2">●</span> 사후 평균 (MLM) &nbsp;
+      <span style="color:#888">●</span> raw 추정치 <span class="formula">y<sub>j</sub></span> &nbsp;
+      굵은 검은 선: MLM 95% 신뢰구간 &nbsp;
+      회색 선: raw 95% CI &nbsp;
+      빨간 점선: Bonferroni-보정 95% CI
+    </p>
+  </div>
+
+  <div class="col">
+    <h2>실시간 표 (모든 학교)</h2>
+    <table id="tbl"></table>
+    <p class="legend">
+      <code>w</code> = shrinkage weight,
+      <code>posterior</code> = 사후 평균,
+      <code>pulled by</code> = raw - posterior (양수면 평균 쪽으로 끌려간 양)
+    </p>
+  </div>
+</div>
+
+<div class="box">
+  <h2>관찰 포인트</h2>
+  <ol>
+    <li>τ = 0 부근: <strong>모든 학교가 공통 평균으로 완전히 끌려간다</strong> (complete pooling).
+        Bonferroni 신뢰구간보다도 훨씬 좁은 결론.</li>
+    <li>τ ≈ 5: 데이터에서 추정된 합리적 값. raw 추정치의 약 절반이 끌려가고, 신뢰구간은 raw보다 약간 좁다.</li>
+    <li>τ → ∞ (40 부근): <strong>shrinkage 거의 없음</strong> (no pooling).
+        사후 평균이 raw 추정치와 거의 같다. 이것이 Bonferroni의 출발점.</li>
+    <li>표준오차 σ<sub>j</sub>가 큰 학교 (C, H)는 항상 더 강하게 끌려간다.
+        <em>잡음이 큰 추정치를 덜 믿는다</em>는 베이지안의 자연스러운 행동.</li>
+  </ol>
+</div>
+
+<div class="warn">
+  <strong>빈도주의자가 자주 하는 실수:</strong>
+  τ = ∞를 가정하고 (사이트별 따로 분석) Bonferroni를 적용하는 것.<br>
+  이것은 ``사이트별 효과가 무한히 다르다''고 사전 가정하는 것과 같다.
+  데이터가 ``사실 비슷한데?''라고 말해도 듣지 않는다.
+  <strong>다층모형은 데이터에게 들어준다.</strong>
+</div>
+
+<script>
+// Eight Schools data (Rubin 1981; Table 1 of Gelman, Hill, Yajima 2012)
+const SCHOOLS = ['A','B','C','D','E','F','G','H'];
+const Y     = [28,  8, -3,  7, -1,  1, 18, 12];
+const SIGMA = [15, 10, 16, 11,  9, 11, 10, 18];
+const N = SCHOOLS.length;
+
+const tauSlider = document.getElementById('tau');
+const tauVal    = document.getElementById('tauVal');
+const alphaSel  = document.getElementById('alpha');
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const tbl = document.getElementById('tbl');
+
+const mu0 = Y.reduce((a,b)=>a+b,0) / N;   // sample mean as estimator of mu
+
+function compute(tau) {
+  const z = parseFloat(alphaSel.value);
+  const zBonf = 2.73;   // Bonferroni z for J=8 at 0.05 (≈ z_{1-0.05/16})
+  const rows = [];
+  for (let j = 0; j < N; j++) {
+    const w = (tau*tau) / (tau*tau + SIGMA[j]*SIGMA[j] + 1e-9);
+    const post_mean = w*Y[j] + (1-w)*mu0;
+    const post_sd   = Math.sqrt(w * SIGMA[j] * SIGMA[j]);    // = sqrt(σ² τ²/(σ²+τ²))
+    rows.push({
+      j, school: SCHOOLS[j], y: Y[j], sigma: SIGMA[j],
+      w, post_mean, post_sd,
+      raw_lo: Y[j] - z*SIGMA[j], raw_hi: Y[j] + z*SIGMA[j],
+      bonf_lo: Y[j] - zBonf*SIGMA[j], bonf_hi: Y[j] + zBonf*SIGMA[j],
+      mlm_lo:  post_mean - z*post_sd, mlm_hi: post_mean + z*post_sd,
+    });
+  }
+  return rows;
+}
+
+function draw() {
+  const tau = parseFloat(tauSlider.value);
+  tauVal.textContent = tau.toFixed(1);
+  const rows = compute(tau);
+
+  // ----- Plot -----
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+
+  // y-axis range
+  let allLo = Math.min(...rows.map(r => Math.min(r.bonf_lo, r.raw_lo, r.mlm_lo)));
+  let allHi = Math.max(...rows.map(r => Math.max(r.bonf_hi, r.raw_hi, r.mlm_hi)));
+  allLo = Math.min(allLo, -10); allHi = Math.max(allHi, 60);
+  const padL = 50, padR = 10, padT = 30, padB = 35;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const x = j => padL + (j + 0.5) * plotW / N;
+  const y = v => padT + plotH - (v - allLo) / (allHi - allLo) * plotH;
+
+  // axes
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH);
+  ctx.lineTo(padL + plotW, padT + plotH); ctx.stroke();
+
+  // zero line
+  ctx.strokeStyle = '#ccc'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(padL + plotW, y(0)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // mu line (population mean estimate, fixed at sample mean)
+  ctx.strokeStyle = '#aaa'; ctx.setLineDash([6,3]);
+  ctx.beginPath(); ctx.moveTo(padL, y(mu0)); ctx.lineTo(padL + plotW, y(mu0)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('μ ≈ ' + mu0.toFixed(1), padL + 4, y(mu0) - 4);
+
+  // y-axis ticks
+  ctx.fillStyle = '#444'; ctx.textAlign = 'right'; ctx.font = '11px sans-serif';
+  for (let v = -10; v <= 60; v += 10) {
+    if (v >= allLo && v <= allHi) {
+      ctx.fillText(v, padL - 6, y(v) + 4);
+      ctx.strokeStyle = '#eee';
+      ctx.beginPath(); ctx.moveTo(padL, y(v)); ctx.lineTo(padL+plotW, y(v)); ctx.stroke();
+    }
+  }
+  ctx.textAlign = 'center';
+  ctx.fillText('Treatment effect', padL + plotW/2, H-5);
+
+  // Bonferroni interval (red dashed, drawn behind)
+  ctx.strokeStyle = '#d44'; ctx.setLineDash([3,3]); ctx.lineWidth = 1.5;
+  for (let j = 0; j < N; j++) {
+    const r = rows[j];
+    ctx.beginPath();
+    ctx.moveTo(x(j) - 8, y(r.bonf_lo));
+    ctx.lineTo(x(j) - 8, y(r.bonf_hi));
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Raw 95% CI (gray)
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1.5;
+  for (let j = 0; j < N; j++) {
+    const r = rows[j];
+    ctx.beginPath();
+    ctx.moveTo(x(j), y(r.raw_lo));
+    ctx.lineTo(x(j), y(r.raw_hi));
+    ctx.stroke();
+    // raw point
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(x(j), y(r.y), 3, 0, 2*Math.PI); ctx.fill();
+  }
+
+  // MLM 95% CI (blue, thick)
+  ctx.strokeStyle = '#1976d2'; ctx.lineWidth = 2.5;
+  for (let j = 0; j < N; j++) {
+    const r = rows[j];
+    ctx.beginPath();
+    ctx.moveTo(x(j) + 8, y(r.mlm_lo));
+    ctx.lineTo(x(j) + 8, y(r.mlm_hi));
+    ctx.stroke();
+    // posterior mean point
+    ctx.fillStyle = '#1976d2';
+    ctx.beginPath(); ctx.arc(x(j) + 8, y(r.post_mean), 5, 0, 2*Math.PI); ctx.fill();
+  }
+
+  // x-axis labels
+  ctx.fillStyle = '#222'; ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  for (let j = 0; j < N; j++) {
+    ctx.fillText(SCHOOLS[j], x(j) + 4, padT + plotH + 14);
+  }
+
+  // ----- Table -----
+  let html = '<tr><th class="label">school</th>'
+           + '<th>y</th><th>σ</th><th>w</th>'
+           + '<th>posterior</th><th>post.SD</th><th>pulled by</th></tr>';
+  for (const r of rows) {
+    const pulled = r.y - r.post_mean;
+    const cls = Math.abs(pulled) > 5 ? ' style="color:#c00"' : '';
+    html += `<tr>
+      <td class="label">${r.school}</td>
+      <td>${r.y}</td><td>${r.sigma}</td>
+      <td>${r.w.toFixed(2)}</td>
+      <td>${r.post_mean.toFixed(1)}</td>
+      <td>${r.post_sd.toFixed(1)}</td>
+      <td${cls}>${pulled >= 0 ? '+' : ''}${pulled.toFixed(1)}</td>
+    </tr>`;
+  }
+  tbl.innerHTML = html;
+}
+
+tauSlider.addEventListener('input', draw);
+alphaSel.addEventListener('change', draw);
+window.addEventListener('load', draw);
+draw();
+</script>
+
+<div class="box" style="margin-top:2em">
+  <h2>다음 단계</h2>
+  <ul>
+    <li>τ = 0 으로 옮긴 뒤 새 학교 (예: A=28) 의 사후 평균을 손으로 확인:
+        모든 학교가 정확히 μ ≈ 8.75로 끌려갔는지?</li>
+    <li>τ = 40 으로 옮긴 뒤: 사후 평균이 raw 추정치와 거의 같은가?</li>
+    <li>Eight Schools 데이터의 실제 사후 (PyMC NUTS) τ ≈ 4.1 부근.
+        이 값에서 표가 논문 Table 1의 Bayes M (11, 7, 6, 7, 5, 6, 10, 8) 과 비슷한지 확인.</li>
+  </ul>
+</div>
+
+</body>
+</html>

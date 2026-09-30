@@ -1,0 +1,21 @@
+\contentsline {section}{\numberline {1}왜 이 논문을 읽어야 하는가}{1}{section.1}%
+\contentsline {section}{\numberline {2}빈도주의 관점에서 본 다중비교 문제 (IHDP 8개 사이트)}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}데이터와 모형}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}사이트별 개별 검정}{2}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Bonferroni 보정}{2}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}FDR (Benjamini--Hochberg)}{3}{subsection.2.4}%
+\contentsline {section}{\numberline {3}다른 관점: Type S, Type M error}{3}{section.3}%
+\contentsline {section}{\numberline {4}베이지안 다층(Hierarchical) 모형}{4}{section.4}%
+\contentsline {subsection}{\numberline {4.1}모형 정의}{4}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Pooling의 세 가지 양상}{4}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Shrinkage의 대수적 유도}{4}{subsection.4.3}%
+\contentsline {section}{\numberline {5}예제 1: Eight Schools (Rubin 1981)}{6}{section.5}%
+\contentsline {subsection}{\numberline {5.1}실제 데이터}{6}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}세 가지 분석의 비교}{6}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Stan / PyMC 코드}{8}{subsection.5.3}%
+\contentsline {section}{\numberline {6}예제 2: IHDP 8개 사이트 시뮬레이션}{8}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Gibbs sampler (학생 직접 구현용)}{9}{subsection.6.1}%
+\contentsline {section}{\numberline {7}결론과 권고}{9}{section.7}%
+\contentsline {subsection}{\numberline {7.1}빈도주의자가 자주 하는 실수 모음}{10}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}언제 다층모형이 가장 유용한가}{10}{subsection.7.2}%
+\contentsline {section}{\numberline {8}연습문제}{11}{section.8}%
